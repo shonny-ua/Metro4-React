@@ -26,6 +26,7 @@ export default class Select extends React.Component {
         clsPrepend: "",
         clsAppend: "",
         clsDropdownToggle: "",
+        onFilter: (filter, cap) => (~(""+cap).toLowerCase().indexOf(filter.toLowerCase())),
         onChange: () => {},
         onFocus: () => {},
         onBlur: () => {},
@@ -190,47 +191,38 @@ export default class Select extends React.Component {
         return <li className={'group-title'}>{cap}</li>;
     };
 
-    handleListClick = e => {
-        let node = e.target;
-
-        while (node.tagName !== 'LI') {
-            node = node.parentNode;
-        }
-
-        const val = node.getAttribute("data-value");
-
-        if (val === undefined) return;
-
+    getHandleItemClick(val) {
         const {multiple} = this.props;
         const {value} = this.state;
 
-        if (multiple) {
-            if (value.indexOf(val) === -1) value.push(val);
-            this.setState({
-                filter: "",
-                value: value
-            })
-        } else {
-            this.setState({
-                open: false,
-                filter: "",
-                value: val
-            });
-        }
-
-    };
+        return e => {
+            if (multiple) {
+                if (value.indexOf(val) === -1) value.push(val);
+                this.setState({
+                    filter: "",
+                    value: value
+                })
+            } else {
+                this.setState({
+                    open: false,
+                    filter: "",
+                    value: val
+                });
+            };
+        };
+    }
 
     createListItem = (val, cap) => {
         let hidden;
-        const {multiple, onDrawItem, useHTML} = this.props;
+        const {multiple, onDrawItem, useHTML, onFilter} = this.props;
         const {filter, value} = this.state;
 
-        hidden = multiple ? value.indexOf(val) !== -1 : filter !== "" && (""+cap).toLowerCase().indexOf(filter.toLowerCase()) === -1;
+        hidden = multiple ? value.indexOf(val) !== -1 : filter !== "" && !onFilter(filter, cap);
 
         return (
             <li hidden={hidden}
                 className={ !multiple && value === val ? 'active' : '' }
-                data-value={val}
+                onClick={ this.getHandleItemClick(val) }
             >
                 <a>{onDrawItem(cap)}</a>
             </li>
@@ -315,7 +307,7 @@ export default class Select extends React.Component {
 
                     <Collapse isOpen={open} className={'drop-container'} transition={transition}>
                         { this.props.filter && <Input onChange={this.inputChange} ref={this.input} placeholder={searchPlaceholder} value={filter}/> }
-                        <ul className={'d-menu'} style={{maxHeight: dropHeight}} onClick={this.handleListClick}>
+                        <ul className={'d-menu'} style={{maxHeight: dropHeight}}>
                             {items}
                         </ul>
                     </Collapse>
